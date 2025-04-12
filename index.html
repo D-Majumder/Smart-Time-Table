@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta 
+    name="viewport" 
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Time Table 1st Year</title>
+  <!-- Favicon using a book emoji (SVG data URI) -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext y='14' font-size='16'%3E📚%3C/text%3E%3C/svg%3E">
+  <!-- Google Font Handlee -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link 
+    href="https://fonts.googleapis.com/css2?family=Handlee&display=swap" 
+    rel="stylesheet">
+  <style>
+    /* --- Base Reset & Typography --- */
+    * {
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box;
+    }
+    html, body {
+      height: 100%;
+    }
+    body {
+      font-family: 'Handlee', cursive;
+      line-height: 1.6;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* --- Wrapper (for sticky footer) --- */
+    .wrapper {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* --- Main Content Container --- */
+    .container {
+      flex: 1;
+      width: 90%;
+      max-width: 800px;
+      text-align: center;
+      margin: 20px auto;
+      padding: 20px;
+      position: relative;
+      z-index: 1;
+      /* Removed outer border */
+    }
+
+    /* --- Theme Styles --- */
+    body.day-theme { 
+      background: linear-gradient(to bottom, #FFF9C4, #FFCC80);
+      color: #333; 
+    }
+    body.night-theme { 
+      background-color: #121212;
+      color: #e0e0e0; 
+    }
+
+    /* --- Night Background & Shooting Stars --- */
+    .night-bg {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #0C1446;
+      background-image: radial-gradient(white 1px, transparent 1px),
+                        radial-gradient(white 1px, transparent 1px);
+      background-size: 60px 60px;
+      background-position: 0 0, 30px 30px;
+      opacity: 0.5;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .shooting-star {
+      position: fixed;
+      width: 2px;
+      height: 2px;
+      background: white;
+      box-shadow: 0 0 8px white;
+      pointer-events: none;
+      opacity: 0;
+      z-index: 0;
+      animation: shooting 3s linear infinite;
+    }
+    .shooting-star.star1 {
+      top: 20%;
+      left: 70%;
+      animation-delay: 1s;
+    }
+    .shooting-star.star2 {
+      top: 40%;
+      left: 85%;
+      animation-delay: 2.5s;
+    }
+    @keyframes shooting {
+      0% { opacity: 0; transform: translate(0, 0); }
+      10% { opacity: 1; }
+      50% { opacity: 1; transform: translate(-100px, 100px); }
+      100% { opacity: 0; }
+    }
+    
+    /* Hide night decorations in day mode */
+    body.day-theme .night-bg,
+    body.day-theme .shooting-star {
+      display: none;
+    }
+    body.night-theme .night-bg,
+    body.night-theme .shooting-star {
+      display: block;
+    }
+    
+    /* --- Header & Section Styles --- */
+    h1, h2 { margin-bottom: 10px; }
+    #datetime-display {
+      margin-bottom: 20px;
+      font-weight: bold;
+    }
+    #class-info, #upcoming-class, #schedule-container {
+      border: 2px solid currentColor;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    /* --- Announcement Section Styling --- */
+    #announcement-section {
+      margin-bottom: 20px;
+    }
+    #announcement-section iframe {
+      width: 100%;
+      height: 300px;
+      border: none;
+      border-radius: 10px;
+      display: block;
+      margin: 0 auto;
+    }
+
+    /* --- Schedule Table Styling --- */
+    #schedule-container {
+      overflow-x: auto; /* Enables horizontal scroll on small screens */
+    }
+    #schedule-container table {
+      margin: 0 auto;
+      font-weight: bold;
+      border-collapse: collapse;
+    }
+    #schedule-container th,
+    #schedule-container td {
+      border: 1px solid currentColor;
+      padding: 8px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    /* --- PDF Renamer Button (Extra) --- */
+    .pdf-button {
+      text-decoration: none;
+      background-color: #2ecc71;
+      color: #fff;
+      display: inline-block;
+      padding: 10px 20px;
+      border-radius: 5px;
+      margin: 20px 0;
+      font-size: 1.1rem;
+    }
+    .pdf-button:hover {
+      background-color: #27ae60;
+    }
+
+    /* --- Theme Icon (Fixed at Top Right) --- */
+    #theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 2;
+    }
+    #theme-icon {
+      font-size: 2rem;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    #theme-icon:active { transform: scale(1.1); }
+
+    /* --- Button Styles --- */
+    .button-container { margin: 15px 0; }
+    button.custom-button {
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: 'Handlee', cursive;
+      font-size: 1.1rem;
+      transition: background-color 0.3s ease;
+    }
+    button.student-button { background-color: #1e90ff; color: white; }
+    button.student-button:hover { background-color: #1c86ee; }
+    button.syllabus-button { background-color: #ff5722; color: white; }
+    button.syllabus-button:hover { background-color: #e64a19; }
+    
+    /* --- Footer --- */
+    footer {
+      font-size: 1rem;
+      text-align: center;
+      padding: 10px;
+      border-top: 2px solid currentColor;
+      z-index: 2;
+    }
+
+    /* --- Responsive Adjustments --- */
+    @media (max-width: 600px) {
+      #class-info, #upcoming-class, #schedule-container {
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body class="day-theme">
+  <div class="wrapper">
+    <!-- Night Background & Shooting Stars -->
+    <div class="night-bg"></div>
+    <div class="shooting-star star1"></div>
+    <div class="shooting-star star2"></div>
+    
+    <!-- Theme Icon (Fixed at Top Right) -->
+    <div id="theme-toggle">
+      <span id="theme-icon"></span>
+    </div>
+
+    <!-- Main Content Container -->
+    <div class="container">
+      <!-- Date & Time Display -->
+      <div id="datetime-display">Loading Date & Time...</div>
+
+      <!-- Current Class Section -->
+      <h1>Current Class</h1>
+      <div id="class-info">
+        <p>Loading schedule...</p>
+      </div>
+
+      <!-- Buttons: Student Login & Syllabus -->
+      <div class="button-container">
+        <button class="custom-button student-button"
+                onclick="window.open('https://makaut1.ucanapply.com/smartexam/public/', '_blank')">
+          Student Login
+        </button>
+        <button class="custom-button syllabus-button"
+                onclick="window.open('https://drive.google.com/file/d/1_haDu2E-deBhQq2C4FMAu0J4-QE9bf67/view?usp=sharing', '_blank')">
+          Syllabus
+        </button>
+      </div>
+
+      <!-- Upcoming Class Section -->
+      <h2>Upcoming Class</h2>
+      <div id="upcoming-class">
+        <p>Loading upcoming class...</p>
+      </div>
+
+      <!-- Announcement Section (Embedded Google Doc) -->
+      <h2>Announcements</h2>
+      <div id="announcement-section">
+        <iframe src="https://docs.google.com/document/d/e/2PACX-1vT2nA-mFdk6NLK1o546NWdOU23ARMP16JU0uqzUBCb8DWuWT7HAsOdjduoBUa19hauXxJyxCzUNapl3/pub?embedded=true"></iframe>
+      </div>
+      
+      <hr style="margin-bottom:20px;">
+
+      <!-- Daily Schedule Dropdown Section -->
+      <h2>View Daily Schedule</h2>
+      <div style="margin-bottom:10px;">
+        <label for="day-select">Select Day: </label>
+        <select id="day-select">
+          <option value="Monday">Monday</option>
+          <option value="Tuesday">Tuesday</option>
+          <option value="Wednesday">Wednesday</option>
+          <option value="Thursday">Thursday</option>
+          <option value="Friday">Friday</option>
+          <option value="Saturday">Saturday</option>
+          <option value="Sunday">Sunday</option>
+        </select>
+      </div>
+      <div id="schedule-container">
+        <!-- The schedule table (or weekend message) will be rendered here -->
+      </div>
+      <div class="button-container">
+        <a href="pdf-renamer.html" class="pdf-button">PDF Renamer</a>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      Made with ❤️ | Thankyou 
+      <span style="font-weight: bold; color: #33B5FF;">Titli </span>🦋
+      | All rights reserved -
+      <span style="font-weight: bold; color: #FF5733;">Dhruba Majumder</span>
+    </footer>
+  </div>
+
+  <script>
+    // ─── Disable Right-Click & Developer Shortcuts ─────────────────────────────
+    document.addEventListener('contextmenu', event => event.preventDefault());
+    document.onkeydown = function(e) {
+      if (
+         e.keyCode === 123 ||  // F12
+         (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) ||  // Ctrl+Shift+I/J
+         (e.ctrlKey && e.keyCode === 85)  // Ctrl+U
+      ) {
+        return false;
+      }
+    };
+
+    // ─── Holiday Data for 2025 (National and West Bengal Holidays) ─────────────
+    const holidays = [
+      { date: "2025-01-14", occasion: "Makar Sankranti" },
+      { date: "2025-01-23", occasion: "Netaji Subhas Chandra Bose Jayanti" },
+      { date: "2025-01-26", occasion: "Republic Day" },
+      { date: "2025-03-14", occasion: "Holi" },
+      { date: "2025-04-10", occasion: "Mahavir Jayanti" },
+      { date: "2025-04-18", occasion: "Good Friday" },
+      { date: "2025-08-15", occasion: "Independence Day" },
+      { date: "2025-09-14", occasion: "Hindi Diwas" },
+      { date: "2025-10-02", occasion: "Gandhi Jayanti" },
+      { date: "2025-10-21", occasion: "Dussehra" },
+      { date: "2025-11-05", occasion: "Diwali" },
+      { date: "2025-11-14", occasion: "Children's Day" },
+      { date: "2025-11-19", occasion: "Guru Nanak Jayanti" },
+      { date: "2025-12-25", occasion: "Thanksgiving Day & Christmas" }
+    ];
+    function checkHoliday() {
+      const todayIST = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+      return holidays.find(item => item.date === todayIST) || null;
+    }
+
+    // ─── Schedule Data ─────────────────────────────
+    const timetable = [
+      // Monday
+      { day: "Monday", start: "9:30 AM",  end: "11:10 AM", subject: "Basic of web design(HTML, CSS, JS)", code: "BCAC202", teacher: "Sagar Sir" },
+      { day: "Monday", start: "11:10 AM", end: "12:00 Noon", subject: "Modern Indian Language and literature", code: "AECC201", teacher: "Subham Sir" },
+      { day: "Monday", start: "12:00 Noon", end: "12:50 PM",  subject: "Environmental Studies",      code: "VAC281D", teacher: "Debarati Mam" },
+      { day: "Monday", start: "12:50 PM",  end: "1:40 PM",  subject: "Lunch Break" },
+      { day: "Monday", start: "1:40 PM",  end: "2:30 PM",  subject: "Organization Behaviur", code: "MIM201A", teacher: "Moutusi Mam" },
+
+      // Tuesday
+      { day: "Tuesday", start: "9:30 AM",  end: "10:20 AM", subject: "Computer Architecture", code: "BCAC201", teacher: "Jyoti Mam" },
+      { day: "Tuesday", start: "10:20 AM", end: "12:00 Noon", subject: "Modern Indian Language and Literature", code: "AECC201", teacher: "Subham Sir" },
+      { day: "Tuesday", start: "12:00 Noon", end: "12:50 PM", subject: "Principles of Management & Organizational Behaviour", code: "GE4B-03", teacher: "Pritam Sir" },
+      { day: "Tuesday", start: "12:50 PM", end: "1:40 PM",  subject: "Lunch Break" },
+      { day: "Tuesday", start: "1:40 PM",  end: "2:30 PM",  subject: "Organization Behaviour", code: "MIM201A", teacher: "Moutusi Mam" },
+      { day: "Tuesday", start: "2:30 PM",  end: "3:20 PM", subject: "Computer Architecture", code: "BCAC201", teacher: "Jyoti Mam" },
+
+      // Wednesday
+      { day: "Wednesday", start: "9:30 AM",  end: "11:10 AM", subject: "Computer Architecture", code: "BCAC201", teacher: "Jyoti Mam" },
+      { day: "Wednesday", start: "11:10 AM", end: "12:00 Noon", subject: "Basic of web design(HTML, CSS, JS)", code: "BCAC202", teacher: "Sagar Sir" },
+      { day: "Wednesday", start: "12:00 Noon", end: "12:50 PM", subject: "Principles of Management & Organizational Behaviour", code: "GE4B-03", teacher: "Pritam Sir" },
+      { day: "Wednesday", start: "12:50 PM", end: "1:40 PM",  subject: "Lunch Break" },
+      { day: "Wednesday", start: "1:40 PM",  end: "3:20 PM",  subject: "Computer Architecture Lab", code: "BCAC291", teacher: "Jyoti Mam" },
+      { day: "Wednesday", start: "3:20 PM",  end: "5:00 PM",  subject: "Yoga" },
+
+      // Thursday
+      { day: "Thursday", start: "9:30 AM",  end: "10:20 AM", subject: "Environmental Studies", code: "VAC281D", teacher: "Debarati Mam" },
+      { day: "Thursday", start: "10:20 AM", end: "12:00 Noon", subject: "Basic of web design Lab", code: "BCAC292", teacher: "Sagar Sir" },
+      { day: "Thursday", start: "12:00 Noon", end: "1:40 PM", subject: "IT Skills", code: "SEC281", teacher: "Pragya Mam" },
+      { day: "Thursday", start: "1:40 PM", end: "2:30 PM",  subject: "Lunch" },
+      { day: "Thursday", start: "2:30 PM",  end: "3:20 PM",  subject: "Basic of web design(HTML, CSS, JS)", code: "BCAC202", teacher: "Sagar Sir" },
+
+      // Friday
+      { day: "Friday", start: "9:30 AM",  end: "11:10 AM", subject: "Principles of Management & Organizational Behaviour", code: "GE4B-03", teacher: "Pritam Sir" },
+      { day: "Friday", start: "11:10 AM", end: "12:00 Noon", subject: "Environmental Studies", code: "VAC281D", teacher: "Debarati Mam" },
+      { day: "Friday", start: "12:00 Noon", end: "12:50 PM",  subject: "Organization Behaviour", code: "MIM201A", teacher: "Moutusi Mam" },
+      { day: "Friday", start: "12:50 PM",  end: "1:40 PM",  subject: "Lunch Break" },
+      { day: "Friday", start: "1:40 PM",  end: "3:20 PM",  subject: "Library" },
+      { day: "Friday", start: "3:20 PM",  end: "4:10 PM",  subject: "IT Skills", code: "SEC281", teacher: "Pragya Mam" },
+    ];
+
+    // Utility: Convert a time string to minutes from midnight.
+    function timeStringToMinutes(timeStr) {
+      timeStr = timeStr.replace("Noon", "PM").trim();
+      const [timePart, meridian] = timeStr.split(" ");
+      let [hour, minute] = timePart.split(":").map(Number);
+      if (meridian === "PM" && hour !== 12) { hour += 12; }
+      if (meridian === "AM" && hour === 12) { hour = 0; }
+      return hour * 60 + minute;
+    }
+
+    // Determine current class based on IST.
+    function getCurrentClass() {
+      const now = new Date();
+      const hoursIST = Number(now.toLocaleString('en-US',{ timeZone:'Asia/Kolkata', hour:'numeric', hour12:false }));
+      const minutesIST = Number(now.toLocaleString('en-US',{ timeZone:'Asia/Kolkata', minute:'numeric' }));
+      const currentMinutes = hoursIST * 60 + minutesIST;
+      const currentDay = now.toLocaleString('en-US', { timeZone:'Asia/Kolkata', weekday:'long' });
+      const todaysClasses = timetable.filter(item => item.day === currentDay);
+      for (let item of todaysClasses) {
+        const start = timeStringToMinutes(item.start);
+        const end = timeStringToMinutes(item.end);
+        if (currentMinutes >= start && currentMinutes < end) {
+          return item;
+        }
+      }
+      return null;
+    }
+
+    // Determine upcoming class based on IST.
+    function getUpcomingClass() {
+      const now = new Date();
+      const hoursIST = Number(now.toLocaleString('en-US',{ timeZone:'Asia/Kolkata', hour:'numeric', hour12:false }));
+      const minutesIST = Number(now.toLocaleString('en-US',{ timeZone:'Asia/Kolkata', minute:'numeric' }));
+      const currentMinutes = hoursIST * 60 + minutesIST;
+      const currentDay = now.toLocaleString('en-US', { timeZone:'Asia/Kolkata', weekday:'long' });
+      const upcomingClasses = timetable
+        .filter(item => item.day === currentDay && timeStringToMinutes(item.start) > currentMinutes)
+        .sort((a, b) => timeStringToMinutes(a.start) - timeStringToMinutes(b.start));
+      return upcomingClasses.length > 0 ? upcomingClasses[0] : null;
+    }
+
+    // Update current class display.
+    function updateClassInfo() {
+      const classInfoDiv = document.getElementById('class-info');
+      const currentClass = getCurrentClass();
+      if (currentClass) {
+        let content = `<p><strong>Time:</strong> ${currentClass.start} - ${currentClass.end}</p>`;
+        content += `<p><strong>Subject:</strong> ${currentClass.subject}</p>`;
+        if (currentClass.code) { content += `<p><strong>Subject Code:</strong> ${currentClass.code}</p>`; }
+        if (currentClass.teacher) { content += `<p><strong>Teacher:</strong> ${currentClass.teacher}</p>`; }
+        classInfoDiv.innerHTML = content;
+      } else {
+        classInfoDiv.innerHTML = `<p>Hey fellas, no class now. Please enjoy your day.</p>`;
+      }
+    }
+
+    // Update upcoming class display.
+    function updateUpcomingClass() {
+      const upcomingDiv = document.getElementById('upcoming-class');
+      const upcomingClass = getUpcomingClass();
+      if (upcomingClass) {
+        let content = `<p><strong>Starts at:</strong> ${upcomingClass.start} - ${upcomingClass.end}</p>`;
+        content += `<p><strong>Subject:</strong> ${upcomingClass.subject}</p>`;
+        if (upcomingClass.code) { content += `<p><strong>Subject Code:</strong> ${upcomingClass.code}</p>`; }
+        if (upcomingClass.teacher) { content += `<p><strong>Teacher:</strong> ${upcomingClass.teacher}</p>`; }
+        upcomingDiv.innerHTML = content;
+      } else {
+        upcomingDiv.innerHTML = `<p>No upcoming class for today.</p>`;
+      }
+    }
+
+    // Update schedule display – handling weekends and holidays.
+    function updateSchedule() {
+      const today = new Date().toLocaleString('en-US',{ timeZone:'Asia/Kolkata', weekday:'long' });
+      if (today === "Saturday") {
+        document.getElementById('class-info').innerHTML = 
+          `<p style="font-size:1.2rem; font-weight:bold;">Bhai aj Saturday, aj to colleger kotha bhabish na</p>`;
+        document.getElementById('upcoming-class').innerHTML = 
+          `<p style="font-size:1.2rem; font-weight:bold;">Enjoy your weekend!</p>`;
+        document.getElementById('schedule-container').innerHTML = 
+          `<p style="font-size:1.2rem; font-weight:bold;">Weekend Vibes</p>`;
+        return;
+      }
+      if (today === "Sunday") {
+        document.getElementById('class-info').innerHTML = 
+          `<p style="font-size:1.2rem; font-weight:bold;">Bhai Aj Sunday aj to etu enjoy kor.</p>`;
+        document.getElementById('upcoming-class').innerHTML = 
+          `<p style="font-size:1.2rem; font-weight:bold;">Relax and have fun!</p>`;
+        document.getElementById('schedule-container').innerHTML = 
+          `<p style="font-size:1.2rem; font-weight:bold;">Weekend Vibes</p>`;
+        return;
+      }
+      
+      const holidayToday = checkHoliday();
+      if (holidayToday) {
+        document.getElementById('class-info').innerHTML =
+          `<p style="font-size:1.2rem; font-weight:bold;">Happy ${holidayToday.occasion}! Enjoy your holiday.</p>`;
+        document.getElementById('upcoming-class').innerHTML =
+          `<p style="font-size:1.2rem; font-weight:bold;">No classes today.</p>`;
+        document.getElementById('schedule-container').innerHTML =
+          `<p style="font-size:1.2rem; font-weight:bold;">Holiday: ${holidayToday.occasion}</p>`;
+      } else {
+        updateClassInfo();
+        updateUpcomingClass();
+      }
+    }
+
+    // Update live date & time in IST.
+    function updateDateTime() {
+      const now = new Date();
+      const optionsDate = { timeZone: 'Asia/Kolkata', year: 'numeric', month: 'long', day: 'numeric' };
+      const optionsTime = { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true };
+      const formattedDate = now.toLocaleDateString('en-US', optionsDate);
+      const formattedTime = now.toLocaleTimeString('en-US', optionsTime);
+      document.getElementById('datetime-display').textContent = `${formattedDate} - ${formattedTime}`;
+    }
+
+    // Display detailed schedule for a selected day.
+    function displayScheduleFor(day) {
+      const scheduleDiv = document.getElementById('schedule-container');
+      if (day === "Saturday" || day === "Sunday") {
+        scheduleDiv.innerHTML = `<p style="font-size:1.2rem; font-weight:bold;">Weekend Vibes</p>`;
+        return;
+      }
+      const dayClasses = timetable.filter(item => item.day === day);
+      if (dayClasses.length === 0) {
+        scheduleDiv.innerHTML = `<p>No schedule available for ${day}.</p>`;
+        return;
+      }
+      let html = "<table>";
+      html += "<tr><th>Time</th><th>Subject</th><th>Code</th><th>Teacher</th></tr>";
+      dayClasses.forEach(item => {
+        html += "<tr>";
+        html += `<td>${item.start} - ${item.end}</td>`;
+        html += `<td>${item.subject}</td>`;
+        html += `<td>${item.code ? item.code : ""}</td>`;
+        html += `<td>${item.teacher ? item.teacher : ""}</td>`;
+        html += "</tr>";
+      });
+      html += "</table>";
+      scheduleDiv.innerHTML = html;
+    }
+
+    // Initialize day-select dropdown based on current IST weekday.
+    function initializeDaySelect() {
+      const daySelect = document.getElementById("day-select");
+      const currentDay = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata", weekday:"long" });
+      if (currentDay === "Saturday" || currentDay === "Sunday") {
+         daySelect.value = currentDay;
+         document.getElementById('schedule-container').innerHTML = `<p style="font-size:1.2rem; font-weight:bold;">Weekend Vibes</p>`;
+      } else if (["Monday","Tuesday","Wednesday","Thursday","Friday"].includes(currentDay)) {
+         daySelect.value = currentDay;
+         displayScheduleFor(currentDay);
+      } else {
+         daySelect.value = "Monday";
+         displayScheduleFor("Monday");
+      }
+      daySelect.addEventListener("change", function(){
+         displayScheduleFor(this.value);
+      });
+    }
+
+    // ─── Theme Update Functions ─────────────────────────────
+    let manualOverride = false;
+    function updateTheme() {
+      if (manualOverride) return;
+      const now = new Date();
+      const istHour = Number(now.toLocaleString('en-US',{ timeZone:'Asia/Kolkata', hour:'numeric', hour12:false }));
+      const themeIcon = document.getElementById('theme-icon');
+      if (istHour >= 6 && istHour < 18) {
+        document.body.classList.add("day-theme");
+        document.body.classList.remove("night-theme");
+        themeIcon.textContent = "☀";
+        themeIcon.style.color = "#FFA500";
+      } else {
+        document.body.classList.add("night-theme");
+        document.body.classList.remove("day-theme");
+        themeIcon.textContent = "🌙";
+        themeIcon.style.color = "#C0C0C0";
+      }
+    }
+    function toggleThemeManual() {
+      manualOverride = true;
+      const themeIcon = document.getElementById('theme-icon');
+      if (document.body.classList.contains("day-theme")) {
+        document.body.classList.remove("day-theme");
+        document.body.classList.add("night-theme");
+        themeIcon.textContent = "🌙";
+        themeIcon.style.color = "#C0C0C0";
+      } else {
+        document.body.classList.remove("night-theme");
+        document.body.classList.add("day-theme");
+        themeIcon.textContent = "☀";
+        themeIcon.style.color = "#FFA500";
+      }
+    }
+    document.getElementById("theme-icon").addEventListener("click", toggleThemeManual);
+
+    // ─── Initial Updates & Intervals ─────────────────────────────
+    updateSchedule();
+    updateTheme();
+    updateDateTime();
+    initializeDaySelect();
+
+    setInterval(() => {
+      updateSchedule();
+      updateTheme();
+    }, 60000);
+    
+    setInterval(updateDateTime, 1000);
+  </script>
+</body>
+</html>

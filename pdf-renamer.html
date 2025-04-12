@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta 
+    name="viewport" 
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>PDF Renamer</title>
+  <!-- Favicon using a book emoji (SVG Data URI) -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext y='14' font-size='16'%3E📚%3C/text%3E%3C/svg%3E">
+  <!-- Google Font Handlee -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Handlee&display=swap" rel="stylesheet">
+  <!-- pdf-lib for PDF processing (if needed in the future) -->
+  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+  <style>
+    /* --- Base Reset & Typography --- */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Handlee', cursive;
+      line-height: 1.6;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+    /* --- Wrapper (sticky footer) --- */
+    .wrapper {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      position: relative;
+      overflow: hidden;
+    }
+    /* --- Main Content Container --- */
+    .container {
+      flex: 1;
+      width: 90%;
+      max-width: 800px;
+      text-align: center;
+      margin: 20px auto;
+      padding: 20px;
+      position: relative;
+      z-index: 1;
+    }
+    /* --- Theme Styles --- */
+    body.day-theme { 
+      background: linear-gradient(to bottom, #FFF9C4, #FFCC80);
+      color: #333; 
+    }
+    body.night-theme { 
+      background-color: #121212;
+      color: #e0e0e0; 
+    }
+    /* --- Night Background & Shooting Stars --- */
+    .night-bg {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-color: #0C1446;
+      background-image: radial-gradient(white 1px, transparent 1px),
+                        radial-gradient(white 1px, transparent 1px);
+      background-size: 60px 60px;
+      background-position: 0 0, 30px 30px;
+      opacity: 0.5;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .shooting-star {
+      position: fixed;
+      width: 2px;
+      height: 2px;
+      background: white;
+      box-shadow: 0 0 8px white;
+      pointer-events: none;
+      opacity: 0;
+      z-index: 0;
+      animation: shooting 3s linear infinite;
+    }
+    .shooting-star.star1 {
+      top: 20%; left: 70%;
+      animation-delay: 1s;
+    }
+    .shooting-star.star2 {
+      top: 40%; left: 85%;
+      animation-delay: 2.5s;
+    }
+    @keyframes shooting {
+      0% { opacity: 0; transform: translate(0, 0); }
+      10% { opacity: 1; }
+      50% { opacity: 1; transform: translate(-100px, 100px); }
+      100% { opacity: 0; }
+    }
+    /* Hide night decorations in day mode */
+    body.day-theme .night-bg,
+    body.day-theme .shooting-star { display: none; }
+    body.night-theme .night-bg,
+    body.night-theme .shooting-star { display: block; }
+    
+    /* --- Header & Section Styles --- */
+    h1, h2 { margin-bottom: 10px; }
+    #datetime-display { margin-bottom: 20px; font-weight: bold; }
+    /* PDF Renamer Form Section */
+    .form-section {
+      border: 2px solid currentColor;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    form#pdfForm label {
+      display: block;
+      margin: 10px 0 5px;
+      font-weight: bold;
+    }
+    form#pdfForm input[type="file"],
+    form#pdfForm input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    /* Roll Number Field Combination */
+    .roll-container {
+      display: flex;
+      margin-bottom: 10px;
+    }
+    .roll-container input {
+      padding: 8px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+      outline: none;
+    }
+    .roll-container input:first-child {
+      flex: 1;
+      background: #eee;
+      cursor: not-allowed;
+      border-radius: 4px 0 0 4px;
+      border-right: none;
+      text-align: center
+    }
+    .roll-container input:last-child {
+      flex: 1;
+      border-radius: 0 4px 4px 0;
+      border-left: none;
+    }
+    .roll-container-label {
+      font-size: 0.9rem;
+      color: #555;
+      margin-bottom: 5px;
+      text-align: left;
+    }
+    form#pdfForm .radio-group label {
+      display: inline-block;
+      margin-right: 10px;
+      font-weight: normal;
+    }
+    form#pdfForm button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      background: #1e90ff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    form#pdfForm button:hover {
+      background: #1c86ee;
+    }
+    form#pdfForm .notice {
+      font-size: 0.9rem;
+      color: #555;
+      margin-top: 10px;
+    }
+    
+    /* Compress PDF Button (External Link) */
+    .compress-button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      background: #ff9900;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 1.1rem;
+    }
+    .compress-button:hover {
+      background: #e68a00;
+    }
+    
+    /* Back to Time Table Button */
+    .back-button {
+      margin-top: 20px;
+      display: inline-block;
+      padding: 10px 15px;
+      background: #ff5722;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    .back-button:hover {
+      background: #e64a19;
+    }
+    
+    /* --- Theme Icon (Fixed at Top Right) --- */
+    #theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 2;
+    }
+    #theme-icon {
+      font-size: 2rem;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    #theme-icon:active { transform: scale(1.1); }
+    
+    /* --- Footer --- */
+    footer {
+      font-size: 1rem;
+      text-align: center;
+      padding: 10px;
+      border-top: 2px solid currentColor;
+      z-index: 2;
+    }
+    
+    /* --- Responsive Adjustments --- */
+    @media (max-width: 600px) {
+      .container { font-size: 0.9rem; }
+    }
+  </style>
+</head>
+<body class="day-theme">
+  <div class="wrapper">
+    <!-- Night Background & Shooting Stars -->
+    <div class="night-bg"></div>
+    <div class="shooting-star star1"></div>
+    <div class="shooting-star star2"></div>
+    
+    <!-- Theme Icon (Fixed at Top Right) -->
+    <div id="theme-toggle">
+      <span id="theme-icon"></span>
+    </div>
+    
+    <!-- Main Content Container -->
+    <div class="container">
+      <div id="datetime-display">Loading Date & Time...</div>
+      
+      <h1>PDF Renamer</h1>
+      <div class="form-section">
+        <form id="pdfForm">
+          <label for="pdfFile">Upload PDF (Only PDF):</label>
+          <input type="file" id="pdfFile" name="pdfFile" accept="application/pdf" required>
+          
+          <label>Roll Number:</label>
+          <div class="roll-container">
+            <input type="text" id="baseRoll" value="345427240" readonly>
+            <input type="text" id="extraDigits" maxlength="2" pattern="[0-9]{2}" placeholder="Enter 2 digits" required>
+          </div>
+          <div class="roll-container-label">This completes your 11-digit roll number.</div>
+          
+          <label for="name">Name:</label>
+          <input type="text" id="name" name="name" required>
+          
+          <label>Subject Code (Select One):</label>
+          <div class="radio-group">
+            <label>
+              <input type="radio" name="subject" value="BCAC201" required>
+              BCAC201 (Computer Architecture)
+            </label>
+            <label>
+              <input type="radio" name="subject" value="BCAC202" required>
+              BCAC202 (Basics of Web Design)
+            </label>
+            <label>
+              <input type="radio" name="subject" value="MIM201A" required>
+              MIM201A (Organization Behavior)
+            </label>
+          </div>
+          <div class="radio-group">
+            <label>
+              <input type="radio" name="subject" value="GE4B-03" required>
+              GE4B-03 (Principles of Management & OB)
+            </label>
+            <label>
+              <input type="radio" name="subject" value="AECC201" required>
+              AECC201 (Modern Indian Languages and Literature)
+            </label>
+            <label>
+              <input type="radio" name="subject" value="SEC281" required>
+              SEC281 (IT Skills)
+            </label>
+            <label>
+                <input type="radio" name="subject" value="VAC281D" required>
+                VAC281D (Environmental Studies)
+              </label>
+          </div>
+          
+          <button type="submit">Rename & Download PDF</button>
+        </form>
+      </div>
+      
+      <!-- Compress PDF Button -->
+      <a href="https://bigpdf.11zon.com/en/compress-pdf/compress-pdf-to-5mb.php" class="compress-button" target="_blank">
+        Compress PDF
+      </a>
+      
+      <!-- Back to Time Table Button -->
+      <a href="index.html" class="back-button">Back to Time Table</a>
+    </div>
+    
+    <!-- Footer -->
+    <footer>
+        Made with ❤️ | Thankyou 
+        <span style="font-weight: bold; color: #33B5FF;">Titli </span>🦋
+        | All rights reserved -
+        <span style="font-weight: bold; color: #FF5733;">Dhruba Majumder</span>
+      </footer>
+  </div>
+  
+  <script>
+    // Disable Right-Click & Developer Shortcuts
+    document.addEventListener('contextmenu', event => event.preventDefault());
+    document.onkeydown = function(e) {
+      if (
+         e.keyCode === 123 ||
+         (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) ||
+         (e.ctrlKey && e.keyCode === 85)
+      ) {
+        return false;
+      }
+    };
+
+    // PDF Renamer: Rename the uploaded file without compression.
+    document.getElementById("pdfForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      
+      const pdfFileInput = document.getElementById("pdfFile");
+      const baseRoll = document.getElementById("baseRoll").value; // "345427240" (9 digits)
+      const extraDigits = document.getElementById("extraDigits").value.trim();
+      if (!/^[0-9]{2}$/.test(extraDigits)) {
+        alert("Please enter exactly 2 digits for the extra roll number.");
+        return;
+      }
+      
+      const name = document.getElementById("name").value.trim();
+      const subjectRadios = document.getElementsByName("subject");
+      let subjectCode = "";
+      for (let i = 0; i < subjectRadios.length; i++) {
+        if (subjectRadios[i].checked) {
+          subjectCode = subjectRadios[i].value;
+          break;
+        }
+      }
+      
+      if (pdfFileInput.files.length === 0) {
+        alert("Please upload a PDF file.");
+        return;
+      }
+      const file = pdfFileInput.files[0];
+      if (file.type !== "application/pdf") {
+        alert("Only PDF files are allowed.");
+        return;
+      }
+      
+      // Final roll number is concatenation of baseRoll (9 digits) and extraDigits (2 digits),
+      // yielding an 11-digit roll number.
+      const finalRoll = baseRoll + extraDigits;
+      const newFilename = `${finalRoll}_${name}_${subjectCode}.pdf`;
+      
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const arrayBuffer = event.target.result;
+        const blob = new Blob([arrayBuffer], { type: "application/pdf" });
+        triggerDownload(blob, newFilename);
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    function triggerDownload(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // Theme Update Functions (Same as Main Page)
+    let manualOverride = false;
+    function updateTheme() {
+      if (manualOverride) return;
+      const now = new Date();
+      const istHour = Number(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata', hour: 'numeric', hour12: false }));
+      const themeIcon = document.getElementById('theme-icon');
+      if (istHour >= 6 && istHour < 18) {
+        document.body.classList.add("day-theme");
+        document.body.classList.remove("night-theme");
+        themeIcon.textContent = "☀";
+        themeIcon.style.color = "#FFA500";
+      } else {
+        document.body.classList.add("night-theme");
+        document.body.classList.remove("day-theme");
+        themeIcon.textContent = "🌙";
+        themeIcon.style.color = "#C0C0C0";
+      }
+    }
+    function toggleThemeManual() {
+      manualOverride = true;
+      const themeIcon = document.getElementById('theme-icon');
+      if (document.body.classList.contains("day-theme")) {
+        document.body.classList.remove("day-theme");
+        document.body.classList.add("night-theme");
+        themeIcon.textContent = "🌙";
+        themeIcon.style.color = "#C0C0C0";
+      } else {
+        document.body.classList.remove("night-theme");
+        document.body.classList.add("day-theme");
+        themeIcon.textContent = "☀";
+        themeIcon.style.color = "#FFA500";
+      }
+    }
+    document.getElementById("theme-icon").addEventListener("click", toggleThemeManual);
+    
+    function updateDateTime() {
+      const now = new Date();
+      const optionsDate = { timeZone: 'Asia/Kolkata', year: 'numeric', month: 'long', day: 'numeric' };
+      const optionsTime = { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true };
+      const formattedDate = now.toLocaleDateString('en-US', optionsDate);
+      const formattedTime = now.toLocaleTimeString('en-US', optionsTime);
+      document.getElementById('datetime-display').textContent = `${formattedDate} - ${formattedTime}`;
+    }
+    updateDateTime();
+    updateTheme();
+    setInterval(updateDateTime, 1000);
+  </script>
+</body>
+</html>
